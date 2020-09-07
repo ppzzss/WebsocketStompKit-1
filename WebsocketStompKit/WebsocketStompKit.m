@@ -134,12 +134,20 @@
     [contents removeObjectAtIndex:0];
     for(NSString *line in contents) {
         if(hasHeaders) {
+            /* Fix the problem that can't handle received Chinese characters
             for (int i=0; i < [line length]; i++) {
                 unichar c = [line characterAtIndex:i];
                 if (c != '\x00') {
                     [body appendString:[NSString stringWithFormat:@"%c", c]];
                 }
             }
+            */
+            unichar c = '\x00';
+            NSString * newLine = [line stringByReplacingOccurrencesOfString: [NSString stringWithFormat: @"%C", c] withString: @""];
+            if (body.length==0)
+                [body appendString: newLine];
+            else
+                [body appendFormat: @"%@\n", newLine];
         } else {
             if ([line isEqual:@""]) {
                 hasHeaders = YES;
@@ -369,7 +377,8 @@ CFAbsoluteTime serverActivity;
     NSMutableDictionary *msgHeaders = [NSMutableDictionary dictionaryWithDictionary:headers];
     msgHeaders[kHeaderDestination] = destination;
     if (body) {
-        msgHeaders[kHeaderContentLength] = [NSNumber numberWithLong:[body length]];
+        //Fix the problem that can't handle received Chinese characters
+        msgHeaders[kHeaderContentLength] = [NSNumber numberWithLong:[[body dataUsingEncoding: NSUTF8StringEncoding] length]];
     }
     [self sendFrameWithCommand:kCommandSend
                        headers:msgHeaders
